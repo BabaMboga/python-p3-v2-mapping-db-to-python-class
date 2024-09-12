@@ -3,6 +3,8 @@ from __init__ import CURSOR, CONN
 
 class Department:
 
+    all = {}
+
     def __init__(self, name, location, id=None):
         self.id = id
         self.name = name
@@ -45,6 +47,7 @@ class Department:
         CONN.commit()
 
         self.id = CURSOR.lastrowid
+        type(self).all[self.id] = self
 
     @classmethod
     def create(cls, name, location):
@@ -72,3 +75,29 @@ class Department:
 
         CURSOR.execute(sql, (self.id,))
         CONN.commit()
+
+    @classmethod
+    def instance_from_db(cls, row):
+        """Return a department object having the attribute values from the table row."""
+
+        department = cls.all.get(row[0])
+        if department:
+            department.name = row[1]
+            department.location = row[2]
+        else:
+
+            department = cls(row[1],row[2])
+            department.id = row[0]
+            cls.all[department.id] = department
+        return department
+    
+    @classmethod
+    def get_all(cls):
+        """Return a list containing a depertmnet object per rown in the table"""
+        sql = """
+            SELECT * FROM departments
+        """
+
+        rows = CURSOR.execute(sql).fetchall()
+
+        return [cls.instance_from_db(row) for row in rows]
